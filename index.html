@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>「30天推歌挑战」分享图生成器 v1.2</title>
+    <meta name="color-scheme" content="light only">
+    <title>「30天推歌挑战」分享图生成器 v1.3.4</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
+            color-scheme: light;
             --border-color: #000;
             --hint-color: #999;
             --guide-line-color: #e0e0e0;
@@ -21,6 +23,7 @@
             font-family: "Microsoft YaHei", sans-serif;
             -webkit-tap-highlight-color: transparent;
             margin: 0;
+            transition: padding 0.25s ease;
         }
 
         #capture-area {
@@ -31,136 +34,485 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
             border-radius: 8px;
         }
-
-        .header { text-align: center; margin-bottom: 20px; }
-        .main-title { font-size: 55px; font-family: "serif"; font-weight: bold; outline: none; }
-        .sub-title { font-size: 32px; margin-top: 10px; outline: none; }
-
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .main-title {
+            font-size: 55px;
+            font-family: "serif";
+            font-weight: bold;
+            outline: none;
+        }
+        .sub-title {
+            font-size: 32px;
+            margin-top: 10px;
+            outline: none;
+        }
         .content-wrapper {
             display: flex;
             width: 100%;
             position: relative;
             margin-top: 10px;
         }
-
+        /* 中央黑色竖线 */
         .divider {
-            position: absolute; left: 50%; top: 0; bottom: 0;
-            width: 4px; background: var(--border-color); transform: translateX(-50%);
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #000000;
+            transform: translateX(-50%);
+            z-index: 5;
         }
-
         .user-section {
-            width: 50%; padding: 30px 20px;
-            display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
+            width: 50%;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
             position: relative;
         }
-
         .album-preview {
-            width: 300px; height: 300px;
+            width: 300px;
+            height: 300px;
             background: #f9f9f9;
             border: 1px dashed #ccc;
             margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: center;
-            text-align: center; color: var(--hint-color); cursor: pointer;
-            background-size: contain;      
-            background-position: center; 
-            background-repeat: no-repeat; 
-            border-radius: 12px;
-            transition: all 0.1s;
-        }
-
-        .song-title { 
-            font-size: 36px; 
-            font-weight: bold; 
-            margin: 15px 0; 
-            width: 100%; 
-            outline: none;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             justify-content: center;
-            text-align: center; 
+            text-align: center;
+            color: var(--hint-color);
+            cursor: pointer;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 1px;
+        }
+        .song-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 15px 0;
+            width: 100%;
+            outline: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
             line-height: 1.3;
-            min-height: auto; 
             word-break: break-word;
-        }   
-
-        .comment-box { width: 100%; min-height: 180px; font-size: 18px; line-height: 1.6; text-align: left; outline: none; }
-        .comment-box img { 
-            max-width: 100%; 
-            height: auto; 
+        }
+        .comment-box {
+            width: 100%;
+            min-height: 180px;
+            font-size: 18px;
+            line-height: 1.6;
+            text-align: left;
+            outline: none;
+        }
+        .comment-box img {
+            max-width: 100%;
+            height: auto;
             display: block;
             margin: 10px 0;
         }
-        
         .id-label {
-            margin-top: 20px; font-size: 22px; font-weight: bold;
-            color: #ff7a7a; outline: none; align-self: flex-start;
+            margin-top: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff7a7a;
+            outline: none;
+            align-self: flex-start;
         }
         .user-section:last-child .id-label {
-            color: #7ab8ff; align-self: flex-end;
+            color: #7ab8ff;
+            align-self: flex-end;
         }
-
         [contenteditable="true"]:empty::before {
             content: attr(placeholder);
             color: #ccc;
             font-size: 0.8em;
             font-style: italic;
         }
-
         body:not(.is-exporting) [contenteditable="true"] {
             outline: 1px dashed var(--guide-line-color);
             outline-offset: 4px;
         }
-
+        
+        /* ========== 底部工具栏 - 圆角矩形风格（带边框和背景色，易于辨认） ========== */
         .bottom-toolbar {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: #fff; border-top: 1px solid #ddd;
-            padding: 15px 20px; display: flex; justify-content: center; align-items: center; gap: 12px;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.08); z-index: 1000;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #ddd;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
             flex-wrap: wrap;
         }
-
-        .tool-group { display: flex; align-items: center; gap: 5px; border-right: 1px solid #eee; padding-right: 12px; }
-        
-        .dropdown { position: relative; display: inline-block; padding-bottom: 10px; margin-bottom: -10px; }
-        
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-right: 1px solid #eee;
+            padding-right: 12px;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            padding-bottom: 10px;
+            margin-bottom: -10px;
+        }
         .dropdown-content {
-            visibility: hidden; opacity: 0;
-            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-            background: white; border: 1px solid #ccc; padding: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 110px; border-radius: 6px;
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 1px solid #ccc;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 110px;
+            border-radius: 6px;
             transition: all 0.2s ease;
-            max-height: 250px; overflow-y: auto;
+            max-height: 250px;
+            overflow-y: auto;
             z-index: 1001;
         }
-
         .dropdown:hover .dropdown-content,
         .dropdown:active .dropdown-content,
         .dropdown:focus-within .dropdown-content {
-            visibility: visible; opacity: 1; bottom: 55px;
+            visibility: visible;
+            opacity: 1;
+            bottom: 55px;
         }
 
-        .dropdown-content button, .tool-group button, .bottom-toolbar > button { 
-            cursor: pointer; padding: 7px 14px; background: #fff; border: 1px solid #ccc; 
-            border-radius: 4px; font-size: 14px;
+        /* 按钮基础样式：圆角矩形，浅灰背景，灰色边框，易于辨认 */
+        .tool-group button,
+        .bottom-toolbar > button:not(.export-btn),
+        .dropdown > button {
+            cursor: pointer;
+            padding: 6px 16px;
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+            border-radius: 4px;           /* 圆角矩形 */
+            font-size: 14px;
+            font-weight: normal;
+            color: #333;
+            transition: all 0.2s ease;
+            margin: 0;
         }
-        
-        .dropdown-content button { 
-            display: block; width: 100%; margin: 4px 0; text-align: left; border: 1px solid transparent; background: none; 
+        .tool-group button:hover,
+        .bottom-toolbar > button:not(.export-btn):hover,
+        .dropdown > button:hover {
+            background: #e9e9e9;
+            border-color: #aaa;
         }
-        .dropdown-content button:hover { background: #f0f7ff; border-color: #d0e0ff; }
-        
-        .export-btn { background: #000 !important; color: #fff; font-weight: bold; border: none !important; padding: 10px 28px !important; margin-left: 15px; }
+        .tool-group button:active,
+        .bottom-toolbar > button:not(.export-btn):active,
+        .dropdown > button:active {
+            transform: scale(0.97);
+        }
 
-        /* 手机端适配：缩略显示但保留完整编辑区域 (优雅缩放，不破坏布局) */
+        /* 下拉菜单内部选项按钮（保持圆角矩形，无边框但悬停有背景） */
+        .dropdown-content button {
+            display: block;
+            width: 100%;
+            margin: 4px 0;
+            padding: 8px 12px;
+            text-align: left;
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .dropdown-content button:hover {
+            background: #f0f0f0;
+        }
+
+        /* 保存图片按钮：黑色背景，白色文字，圆角矩形 */
+        .export-btn {
+            background: #000 !important;
+            color: #fff !important;
+            font-weight: bold;
+            border: 1px solid #000 !important;
+            padding: 6px 24px !important;
+            margin-left: 15px;
+            border-radius: 6px !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            transition: background 0.2s, transform 0.1s;
+        }
+        .export-btn:hover {
+            background: #2c2c2c !important;
+            transform: scale(0.98);
+        }
+
+        /* 时间水印样式：与普通按钮保持一致 */
+        .watermark-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f5f5f5;
+            padding: 4px 14px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            border: 1px solid #ccc;
+            transition: background 0.2s;
+        }
+        .watermark-checkbox:hover {
+            background: #e9e9e9;
+        }
+        .watermark-checkbox input {
+            margin: 0;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* ========== 侧拉菜单触发按钮（左侧居中长条形） ========== */
+        #menu-trigger {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 2200;
+            width: 35px;
+            height: 110px;
+            background: #fff;
+            border: 1.5px solid #222;
+            border-left: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.22s ease;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            outline: none;
+            padding: 0;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            letter-spacing: 2px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a1a1a;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        #menu-trigger:hover {
+            background: #fafafa;
+            border-color: #000;
+            box-shadow: 3px 0 18px rgba(0, 0, 0, 0.1);
+            width: 45px;
+        }
+        #menu-trigger:active {
+            background: #f0f0f0;
+            transform: translateY(-50%) scale(0.97);
+            transition: transform 0.1s ease;
+        }
+        #menu-trigger.menu-open {
+            background: #f5f5f5;
+            border-color: #000;
+            font-weight: 700;
+        }
+
+        /* 遮罩层 */
+        #menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s;
+        }
+        #menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 侧拉菜单面板 */
+        #side-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 320px;
+            max-width: 85vw;
+            height: 100vh;
+            height: 100dvh;
+            background: #fff;
+            z-index: 2100;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 30px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+        }
+        #side-menu.active {
+            transform: translateX(0);
+        }
+
+        .side-menu-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px;
+            border-bottom: 2px solid #222;
+            flex-shrink: 0;
+            background: #fff;
+        }
+        .side-menu-header .menu-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: 0.5px;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        .side-menu-header .menu-close-btn {
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: 1.5px solid #555;
+            border-radius: 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .side-menu-header .menu-close-btn:hover {
+            background: #f5f5f5;
+            border-color: #000;
+        }
+        .side-menu-header .menu-close-btn:active {
+            background: #e8e8e8;
+            transform: scale(0.93);
+        }
+        .side-menu-header .menu-close-btn::before,
+        .side-menu-header .menu-close-btn::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 1.5px;
+            background: #333;
+            border-radius: 0;
+        }
+        .side-menu-header .menu-close-btn::before {
+            transform: rotate(45deg);
+        }
+        .side-menu-header .menu-close-btn::after {
+            transform: rotate(-45deg);
+        }
+
+        .side-menu-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding: 8px 0 24px 0;
+        }
+        .day-group-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 16px 20px 6px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            margin: 0 16px 4px 16px;
+        }
+        .day-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 20px;
+            margin: 2px 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+            user-select: none;
+            position: relative;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
+            border: none;
+            outline: none;
+        }
+        .day-item:hover {
+            background: #f7f7f7;
+        }
+        .day-item:active {
+            background: #eee;
+            transform: scale(0.985);
+        }
+        .day-item.active {
+            background: #f2f2f2;
+            font-weight: 600;
+            border-left: 3px solid #222;
+            border-radius: 0 6px 6px 0;
+            padding-left: 17px;
+        }
+        .day-item .day-num {
+            font-weight: 700;
+            font-size: 15px;
+            color: #1a1a1a;
+            min-width: 52px;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+        .day-item .day-desc {
+            color: #6c6c70;
+            font-size: 13px;
+            line-height: 1.35;
+            flex: 1;
+        }
+        .day-item.active .day-desc {
+            color: #1c1c1e;
+        }
+        .side-menu-footer {
+            flex-shrink: 0;
+            padding: 12px 20px;
+            border-top: 1px solid #e8e8e8;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+            background: #fafafa;
+        }
+
+        /* 移动端适配 */
         @media screen and (max-width: 800px) {
-            body { 
-                padding: 12px 8px 180px 8px; 
+            body {
+                padding: 12px 8px 180px 8px;
                 overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
             }
             #capture-area {
                 transform-origin: top center;
@@ -168,16 +520,60 @@
                 margin: 0 auto;
             }
             .bottom-toolbar {
-                flex-wrap: wrap; 
+                flex-wrap: wrap;
                 justify-content: center;
                 padding: 10px;
                 gap: 8px;
             }
-            .tool-group { border-right: none; }
-            .dropdown-content { max-height: 220px; }
+            .tool-group {
+                border-right: none;
+                gap: 6px;
+            }
+            .tool-group button,
+            .bottom-toolbar > button:not(.export-btn),
+            .dropdown > button {
+                padding: 4px 12px;
+                font-size: 12px;
+            }
+            .dropdown-content {
+                max-height: 200px;
+            }
+            .watermark-checkbox {
+                padding: 3px 10px;
+                font-size: 12px;
+            }
+            #menu-trigger {
+                width: 28px;
+                height: 90px;
+                font-size: 12px;
+            }
+            #menu-trigger:hover {
+                width: 28px;
+            }
+            #side-menu {
+                width: 82vw;
+                max-width: 300px;
+            }
+            .day-item {
+                padding: 10px 14px;
+                margin: 1px 6px;
+            }
+            .day-item.active {
+                padding-left: 11px;
+            }
+            .day-item .day-num {
+                font-size: 13px;
+                min-width: 44px;
+            }
+            .day-item .day-desc {
+                font-size: 12px;
+            }
+            .export-btn {
+                padding: 4px 18px !important;
+                margin-left: 6px;
+            }
         }
 
-        /* 平板适中尺寸 */
         @media screen and (min-width: 801px) and (max-width: 1024px) {
             body {
                 padding: 20px 20px 160px 20px;
@@ -186,9 +582,17 @@
                 zoom: 0.8;
                 transform-origin: top center;
             }
+            #menu-trigger {
+                width: 42px;
+                height: 100px;
+                font-size: 13px;
+            }
+            #side-menu {
+                width: 300px;
+                max-width: 75vw;
+            }
         }
 
-        /* ---------- 灰幕加载样式 ---------- */
         #export-mask {
             position: fixed;
             top: 0;
@@ -202,7 +606,6 @@
             align-items: center;
             z-index: 9999;
             flex-direction: column;
-            font-family: "Microsoft YaHei", sans-serif;
         }
         .mask-card {
             background: white;
@@ -228,312 +631,388 @@
             animation: spin 0.8s linear infinite;
             margin: 16px auto 8px;
         }
-        .mask-hint {
-            font-size: 13px;
-            color: #6c757d;
-            margin-top: 12px;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes floatPop {
             from { opacity: 0; transform: scale(0.92); }
             to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 暗色模式适配 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #f0f0f0 !important;
+            }
+            #capture-area,
+            #capture-area .user-section,
+            #capture-area .comment-box,
+            #capture-area .song-title,
+            #capture-area .header,
+            #capture-area .main-title,
+            #capture-area .sub-title,
+            #capture-area .album-preview {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            #capture-area .divider {
+                background: #000000 !important;
+            }
+            [contenteditable="true"] {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            .id-label {
+                color: #ff7a7a !important;
+            }
+            .user-section:last-child .id-label {
+                color: #7ab8ff !important;
+            }
+            #menu-trigger,
+            #side-menu,
+            .side-menu-header,
+            .day-item,
+            .side-menu-footer {
+                background-color: #ffffff !important;
+                color: #1a1a1a !important;
+                border-color: #e0e0e0 !important;
+            }
+            .day-item.active {
+                background-color: #f2f2f2 !important;
+                border-left-color: #222 !important;
+            }
+            .bottom-toolbar,
+            .bottom-toolbar button,
+            .dropdown-content,
+            .dropdown-content button,
+            .watermark-checkbox,
+            .tool-group button,
+            .dropdown > button {
+                background-color: #fff;
+                color: #000;
+                border-color: #ccc;
+            }
+            .tool-group button:hover,
+            .bottom-toolbar > button:not(.export-btn):hover,
+            .dropdown > button:hover {
+                background: #eaeaea;
+            }
+            .export-btn {
+                background: #000 !important;
+                color: #fff !important;
+                border-color: #000 !important;
+            }
         }
     </style>
 </head>
 <body>
 
-<div id="capture-area">
-    <div class="header">
-        <div class="main-title" contenteditable="true" placeholder="30天推歌挑战">30天推歌挑战</div>
-        <div class="sub-title" contenteditable="true" placeholder="输入副标题">DAY01 在歌名中带有颜色的歌</div>
-    </div>
-
-    <div class="content-wrapper">
-        <div class="divider"></div>
-        <div class="user-section">
-            <input type="file" accept="image/*" onchange="loadImg(event, 'previewA')" id="fileA" style="display:none">
-            <div class="album-preview" id="previewA" onclick="document.getElementById('fileA').click()">点击上传封面</div>
-            <div class="song-title" contenteditable="true" placeholder="歌名&#10;歌手"></div>
-            <div class="comment-box" contenteditable="true" placeholder="在这里输入你的想说的话，支持粘贴图片..."></div>
-            <div class="id-label" contenteditable="true" placeholder="用户A (可选)">用户A (可选)</div>
+    <button id="menu-trigger" aria-label="打开目录菜单" title="选择DAY">展开目录 ▶</button>
+    <div id="menu-overlay"></div>
+    <nav id="side-menu">
+        <div class="side-menu-header">
+            <span class="menu-title">30天推歌挑战</span>
+            <button class="menu-close-btn" id="menu-close-btn" aria-label="关闭目录"></button>
         </div>
-        <div class="user-section">
-            <input type="file" accept="image/*" onchange="loadImg(event, 'previewB')" id="fileB" style="display:none">
-            <div class="album-preview" id="previewB" onclick="document.getElementById('fileB').click()">点击上传封面</div>
-            <div class="song-title" contenteditable="true" placeholder="歌名&#10;歌手"></div>
-            <div class="comment-box" contenteditable="true" placeholder="在这里输入你的想说的话，支持粘贴图片..."></div>
-            <div class="id-label" contenteditable="true" placeholder="用户B (可选)">用户B (可选)</div>
+        <div class="side-menu-list" id="day-list-container"></div>
+        <div class="side-menu-footer">
+            当前：<span id="current-day-indicator">DAY01</span> · 点击切换主题
         </div>
-    </div>
-</div>
+    </nav>
 
-<div class="bottom-toolbar">
-    <div class="tool-group">
-        <button onmousedown="event.preventDefault(); document.execCommand('bold')"><b>B</b></button>
-        <button onmousedown="event.preventDefault(); document.execCommand('italic')"><i>I</i></button>
-        <button onmousedown="event.preventDefault(); document.execCommand('underline')"><u>U</u></button>
-    </div>
-
-    <div class="dropdown">
-        <button>字号 ▲</button>
-        <div class="dropdown-content">
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '1')" style="font-size: 10px;">10px</button>
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '2')" style="font-size: 13px;">13px</button>
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '3')" style="font-size: 16px;">16px</button>
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '4')" style="font-size: 18px;">18px</button>
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '5')" style="font-size: 24px;">24px</button>
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '6')" style="font-size: 32px;">32px</button>
-            <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '7')" style="font-size: 40px;">40px</button>
+    <div id="capture-area">
+        <div class="header">
+            <div class="main-title" contenteditable="true" placeholder="30天推歌挑战">30天推歌挑战</div>
+            <div class="sub-title" contenteditable="true" placeholder="输入副标题" id="sub-title-el">DAY01 在歌名中带有颜色的歌</div>
+        </div>
+        <div class="content-wrapper">
+            <div class="divider"></div>
+            <div class="user-section">
+                <input type="file" accept="image/*" onchange="loadImg(event, 'previewA')" id="fileA" style="display:none">
+                <div class="album-preview" id="previewA" onclick="document.getElementById('fileA').click()">点击上传封面</div>
+                <div class="song-title" contenteditable="true" placeholder="歌名&#10;歌手"></div>
+                <div class="comment-box" contenteditable="true" placeholder="在这里输入你想说的，支持粘贴图片..."></div>
+                <div class="id-label" contenteditable="true" placeholder="用户A (可选)">用户A (可选)</div>
+            </div>
+            <div class="user-section">
+                <input type="file" accept="image/*" onchange="loadImg(event, 'previewB')" id="fileB" style="display:none">
+                <div class="album-preview" id="previewB" onclick="document.getElementById('fileB').click()">点击上传封面</div>
+                <div class="song-title" contenteditable="true" placeholder="歌名&#10;歌手"></div>
+                <div class="comment-box" contenteditable="true" placeholder="在这里输入你想说的，支持粘贴图片..."></div>
+                <div class="id-label" contenteditable="true" placeholder="用户B (可选)">用户B (可选)</div>
+            </div>
         </div>
     </div>
 
-    <div class="dropdown">
-        <button>颜色 ▲</button>
-        <div class="dropdown-content">
-            <button style="color:black" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, 'black')">■ 黑色</button>
-            <button style="color:#ff4d4f" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#ff4d4f')">■ 红色</button>
-            <button style="color:#1890ff" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#1890ff')">■ 蓝色</button>
-            <button style="color:#52c41a" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#52c41a')">■ 绿色</button>
-            <button style="color:#faad14" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#faad14')">■ 黄色</button>
-            <button style="color:#999" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#999')">■ 灰色</button>
+    <div class="bottom-toolbar">
+        <div class="tool-group">
+            <button onmousedown="event.preventDefault(); document.execCommand('bold')"><b>B</b></button>
+            <button onmousedown="event.preventDefault(); document.execCommand('italic')"><i>I</i></button>
+            <button onmousedown="event.preventDefault(); document.execCommand('underline')"><u>U</u></button>
+        </div>
+        <div class="dropdown">
+            <button>字号 ▲</button>
+            <div class="dropdown-content">
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '1')" style="font-size: 10px;">10px</button>
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '2')" style="font-size: 13px;">13px</button>
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '3')" style="font-size: 16px;">16px</button>
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '4')" style="font-size: 18px;">18px</button>
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '5')" style="font-size: 24px;">24px</button>
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '6')" style="font-size: 32px;">32px</button>
+                <button onmousedown="event.preventDefault(); document.execCommand('fontSize', false, '7')" style="font-size: 40px;">40px</button>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button>颜色 ▲</button>
+            <div class="dropdown-content">
+                <button style="color:black" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, 'black')">■ 黑色</button>
+                <button style="color:#ff4d4f" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#ff4d4f')">■ 红色</button>
+                <button style="color:#1890ff" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#1890ff')">■ 蓝色</button>
+                <button style="color:#52c41a" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#52c41a')">■ 绿色</button>
+                <button style="color:#faad14" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#faad14')">■ 黄色</button>
+                <button style="color:#999" onmousedown="event.preventDefault(); document.execCommand('foreColor', false, '#999')">■ 灰色</button>
+            </div>
+        </div>
+        <button onmousedown="event.preventDefault(); insertImgPrompt()">🔗 插图</button>
+        <label class="watermark-checkbox">
+            <input type="checkbox" id="watermark-check"> 时间水印
+        </label>
+        <button class="export-btn" id="exportBtn" onclick="exportWithMask()">保存图片</button>
+    </div>
+
+    <div id="export-mask">
+        <div class="mask-card">
+            <div class="loading-spinner"></div>
+            <p>🎨 正在生成分享图...</p>
+            <div class="mask-hint">渲染中，请稍后～</div>
         </div>
     </div>
 
-    <button onmousedown="event.preventDefault(); insertImgPrompt()">🔗 插图</button>
-    <button class="export-btn" id="exportBtn" onclick="exportWithMask()">保存图片</button>
-</div>
+    <script>
+        const dayThemes = [
+            { day: 1, desc: '在歌名中带有颜色的歌' }, { day: 2, desc: '在歌名中带有数字的歌' },
+            { day: 3, desc: '一首会让你想起夏天的歌' }, { day: 4, desc: '一首会让你想起某个人的歌' },
+            { day: 5, desc: '一首需要调大音量放的歌' }, { day: 6, desc: '一首让你想要跳舞的歌' },
+            { day: 7, desc: '一首适合开车或旅途中听的歌' }, { day: 8, desc: '一首关于酒精/毒品/药品的歌' },
+            { day: 9, desc: '一首让你感到开心的歌' }, { day: 10, desc: '一首让你感到悲伤的歌' },
+            { day: 11, desc: '一首你永远不会厌倦的歌' }, { day: 12, desc: '一首来自你青春期之前的歌' },
+            { day: 13, desc: '一首至少有半个世纪的歌' }, { day: 14, desc: '一首你想在婚礼放的歌' },
+            { day: 15, desc: '一首你喜欢的翻唱(或Remix)歌曲' }, { day: 16, desc: '一首你挚爱的经典歌曲' },
+            { day: 17, desc: '一首你喜欢的二重唱歌曲' }, { day: 18, desc: '一首与你出生年份相同的歌' },
+            { day: 19, desc: '一首让你思考人生的歌' }, { day: 20, desc: '一首对你意义重大的歌' },
+            { day: 21, desc: '一首带有某人名字的歌' }, { day: 22, desc: '一首激励着你上进的歌' },
+            { day: 23, desc: '一首你希望所有人都听到的歌' }, { day: 24, desc: '一首来自已解散乐队的歌' },
+            { day: 25, desc: '一首来自已故艺术家的歌' }, { day: 26, desc: '一首让你想谈恋爱的歌' },
+            { day: 27, desc: '一首能令你心碎的歌' }, { day: 28, desc: '歌手声音令你着迷的歌' },
+            { day: 29, desc: '一首让你想起童年的歌' }, { day: 30, desc: '一首让你想起自己的歌' }
+        ];
 
-<!-- 灰幕遮罩层 -->
-<div id="export-mask">
-    <div class="mask-card">
-        <div class="loading-spinner"></div>
-        <p>✨ 图片生成中…… ✨</p>
-        <div class="mask-hint">渲染中，请稍后～</div>
-    </div>
-</div>
+        let currentDay = 1;
+        const menuTrigger = document.getElementById('menu-trigger');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const sideMenu = document.getElementById('side-menu');
+        const menuCloseBtn = document.getElementById('menu-close-btn');
+        const dayListContainer = document.getElementById('day-list-container');
+        const subTitleEl = document.getElementById('sub-title-el');
+        const currentDayIndicator = document.getElementById('current-day-indicator');
 
-<script>
-    // ======================= 基础工具函数 (保留所有原有功能) =======================
-    function loadImg(event, targetId) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(){
-            const output = document.getElementById(targetId);
-            output.style.backgroundImage = `url(${reader.result})`;
-            output.innerText = "";
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function insertImgPrompt() {
-        const url = prompt('请输入外部图片直链 URL (支持jpg/png/gif):');
-        if (url && url.trim()) {
-            document.execCommand('insertImage', false, url.trim());
-        }
-    }
-
-    // 全局编辑辅助：支持回车换行而不提交 (保持原有内容体验)
-    document.querySelectorAll('[contenteditable="true"]').forEach(el => {
-        el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                document.execCommand('insertLineBreak');
-            }
-        });
-    });
-
-    // 专门为 .song-title 额外确保换行友好 (原内联方式也保留，但双保障)
-    const songTitles = document.querySelectorAll('.song-title');
-    songTitles.forEach(el => {
-        el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                document.execCommand('insertLineBreak');
-            }
-        });
-    });
-
-    // 导出锁 (防止连续点击)
-    let isExportingLock = false;
-
-    // 新版优雅导出函数: 离屏克隆 + 灰幕加载 + 无跳跃缩放
-    async function exportWithMask() {
-        if (isExportingLock) {
-            console.log("已有导出任务进行中");
-            return;
-        }
-        
-        const exportBtn = document.getElementById('exportBtn');
-        const maskEl = document.getElementById('export-mask');
-        const captureArea = document.getElementById('capture-area');
-        
-        // 锁定与UI反馈
-        isExportingLock = true;
-        exportBtn.disabled = true;
-        exportBtn.innerText = "生成中...";
-        maskEl.style.display = 'flex';
-        
-        try {
-            // 1. 深度克隆原始区域 (保留所有内容、图片、内联样式)
-            const cloneContainer = document.createElement('div');
-            cloneContainer.style.position = 'fixed';
-            cloneContainer.style.top = '-10000px';
-            cloneContainer.style.left = '-10000px';
-            cloneContainer.style.width = '800px';
-            cloneContainer.style.zIndex = '-9999';
-            cloneContainer.style.pointerEvents = 'none';
-            
-            const cloneArea = captureArea.cloneNode(true);
-            cloneArea.id = 'clone-export-area';
-            // 关键：移除所有可能因手机缩放导致的变形，强制使用原始宽高和标准样式
-            cloneArea.style.zoom = '1';
-            cloneArea.style.transform = 'none';
-            cloneArea.style.width = '800px';
-            cloneArea.style.margin = '0';
-            cloneArea.style.padding = '40px';   // 保持原有内边距
-            cloneArea.style.boxSizing = 'border-box';
-            
-            // 移除克隆版本中的编辑虚线 (contenteditable 辅助线)
-            cloneArea.querySelectorAll('[contenteditable="true"]').forEach(el => {
-                el.style.outline = 'none';
-                // 保留原 placeholder 属性体验 (不影响显示)
+        function buildDayList() {
+            dayListContainer.innerHTML = '';
+            const groups = [
+                { label: 'DAY 01 — 10', range: [1, 10] },
+                { label: 'DAY 11 — 20', range: [11, 20] },
+                { label: 'DAY 21 — 30', range: [21, 30] }
+            ];
+            groups.forEach(group => {
+                const groupLabel = document.createElement('div');
+                groupLabel.className = 'day-group-label';
+                groupLabel.textContent = group.label;
+                dayListContainer.appendChild(groupLabel);
+                dayThemes.filter(t => t.day >= group.range[0] && t.day <= group.range[1]).forEach(theme => {
+                    const dayItem = document.createElement('div');
+                    dayItem.className = 'day-item';
+                    if (theme.day === currentDay) dayItem.classList.add('active');
+                    dayItem.setAttribute('data-day', theme.day);
+                    dayItem.innerHTML = `<span class="day-num">DAY${String(theme.day).padStart(2, '0')}</span><span class="day-desc">${theme.desc}</span>`;
+                    dayItem.addEventListener('click', () => selectDay(theme.day, dayItem));
+                    dayListContainer.appendChild(dayItem);
+                });
             });
-            
-            // 确保所有 .album-preview 的背景图正确拷贝并且背景渲染规则一致
-            const originalPreviews = captureArea.querySelectorAll('.album-preview');
-            const clonePreviews = cloneArea.querySelectorAll('.album-preview');
-            for (let i = 0; i < originalPreviews.length; i++) {
-                const origStyle = window.getComputedStyle(originalPreviews[i]);
-                const bgImg = origStyle.backgroundImage;
-                if (bgImg && bgImg !== 'none') {
-                    clonePreviews[i].style.backgroundImage = bgImg;
-                    clonePreviews[i].style.backgroundSize = 'contain';
-                    clonePreviews[i].style.backgroundPosition = 'center';
-                    clonePreviews[i].style.backgroundRepeat = 'no-repeat';
-                }
-            }
-            
-            cloneContainer.appendChild(cloneArea);
-            document.body.appendChild(cloneContainer);
-            
-            // 2. 渲染等待 250ms 保证图片/字体准备完全 (更稳定)
-            await new Promise(resolve => setTimeout(resolve, 280));
-            
-            // 3. html2canvas 渲染克隆区
-            const canvas = await html2canvas(cloneArea, {
-                scale: 2.5,          // 高清输出
-                backgroundColor: "#ffffff",
-                useCORS: true,
-                logging: false,
-                width: 800,
-                windowWidth: 800,
-                scrollX: 0,
-                scrollY: 0,
-                onclone: (clonedDoc, element) => {
-                    // 二次保障：确保背景图片的渲染一致性
-                    const clonedContainerDiv = element.querySelector('#clone-export-area');
-                    if (clonedContainerDiv) {
-                        const clonedPreviewsInner = clonedContainerDiv.querySelectorAll('.album-preview');
-                        clonedPreviewsInner.forEach(preview => {
-                            if (preview.style.backgroundImage && preview.style.backgroundImage !== 'none') {
-                                preview.style.backgroundSize = 'contain';
-                                preview.style.backgroundPosition = 'center';
-                            }
-                        });
+        }
+
+        function selectDay(day) {
+            if (day === currentDay && sideMenu.classList.contains('active')) { closeMenu(); return; }
+            currentDay = day;
+            const theme = dayThemes.find(t => t.day === day);
+            if (theme && subTitleEl) subTitleEl.textContent = `DAY${String(theme.day).padStart(2, '0')} ${theme.desc}`;
+            document.querySelectorAll('.day-item').forEach(item => {
+                item.classList.remove('active');
+                if (parseInt(item.getAttribute('data-day')) === day) item.classList.add('active');
+            });
+            if (currentDayIndicator) currentDayIndicator.textContent = `DAY${String(day).padStart(2, '0')}`;
+            closeMenu();
+            setTimeout(() => { if (subTitleEl) subTitleEl.focus(); }, 350);
+        }
+
+        function openMenu() {
+            sideMenu.classList.add('active');
+            menuOverlay.classList.add('active');
+            menuTrigger.classList.add('menu-open');
+            menuTrigger.textContent = '收起目录 ◀';
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                const activeItem = dayListContainer.querySelector('.day-item.active');
+                if (activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }
+        function closeMenu() {
+            sideMenu.classList.remove('active');
+            menuOverlay.classList.remove('active');
+            menuTrigger.classList.remove('menu-open');
+            menuTrigger.textContent = '展开目录 ▶';
+            document.body.style.overflow = '';
+        }
+        function toggleMenu() { sideMenu.classList.contains('active') ? closeMenu() : openMenu(); }
+
+        menuTrigger.addEventListener('click', (e) => { e.preventDefault(); toggleMenu(); });
+        menuCloseBtn.addEventListener('click', (e) => { e.preventDefault(); closeMenu(); });
+        menuOverlay.addEventListener('click', (e) => { e.preventDefault(); closeMenu(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sideMenu.classList.contains('active')) closeMenu(); });
+        sideMenu.addEventListener('touchmove', function(e) { }, { passive: false });
+        dayListContainer.addEventListener('touchmove', function(e) { e.stopPropagation(); }, { passive: true });
+
+        buildDayList();
+        if (currentDayIndicator) currentDayIndicator.textContent = `DAY${String(currentDay).padStart(2, '0')}`;
+
+        function loadImg(event, targetId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function() {
+                const output = document.getElementById(targetId);
+                output.style.backgroundImage = `url(${reader.result})`;
+                output.innerText = "";
+            };
+            reader.readAsDataURL(file);
+        }
+        function insertImgPrompt() {
+            const url = prompt('请输入外部图片直链 URL:');
+            if (url && url.trim()) document.execCommand('insertImage', false, url.trim());
+        }
+        function getLocalTimestamp() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+        }
+
+        document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.execCommand('insertLineBreak'); }
+            });
+        });
+
+        let isExportingLock = false;
+        async function exportWithMask() {
+            if (isExportingLock) return;
+            if (sideMenu.classList.contains('active')) closeMenu();
+            const exportBtn = document.getElementById('exportBtn');
+            const maskEl = document.getElementById('export-mask');
+            const captureArea = document.getElementById('capture-area');
+            const addWatermark = document.getElementById('watermark-check').checked;
+            isExportingLock = true;
+            exportBtn.disabled = true;
+            exportBtn.innerText = "生成中...";
+            maskEl.style.display = 'flex';
+            try {
+                const cloneContainer = document.createElement('div');
+                cloneContainer.style.cssText = 'position:fixed; top:-10000px; left:-10000px; width:800px; z-index:-9999; pointer-events:none;';
+                const cloneArea = captureArea.cloneNode(true);
+                cloneArea.id = 'clone-export-area';
+                cloneArea.style.zoom = '1';
+                cloneArea.style.transform = 'none';
+                cloneArea.style.width = '800px';
+                cloneArea.style.margin = '0';
+                cloneArea.style.padding = '40px';
+                cloneArea.style.boxSizing = 'border-box';
+                cloneArea.querySelectorAll('[contenteditable="true"]').forEach(el => el.style.outline = 'none');
+                const originalPreviews = captureArea.querySelectorAll('.album-preview');
+                const clonePreviews = cloneArea.querySelectorAll('.album-preview');
+                for (let i = 0; i < originalPreviews.length; i++) {
+                    const bgImg = window.getComputedStyle(originalPreviews[i]).backgroundImage;
+                    if (bgImg && bgImg !== 'none') {
+                        clonePreviews[i].style.backgroundImage = bgImg;
+                        clonePreviews[i].style.backgroundSize = 'contain';
+                        clonePreviews[i].style.backgroundPosition = 'center';
+                        clonePreviews[i].style.backgroundRepeat = 'no-repeat';
                     }
                 }
-            });
-            
-            // 4. 移除临时克隆容器
-            if (cloneContainer && cloneContainer.parentNode) {
-                document.body.removeChild(cloneContainer);
-            }
-            
-            // 5. 下载图片 (逻辑保持原有可用)
-            try {
-                const link = document.createElement('a');
-                const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
-                link.download = `30天推歌挑战_${timestamp}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            } catch (downloadErr) {
-                // 降级方案: 大多数浏览器都支持click下载，若失败则新窗口预览
-                const newWin = window.open();
-                if (newWin) {
-                    newWin.document.write(`
-                        <html><head><title>推歌挑战分享图</title><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-                        <body style="text-align:center; background:#222; margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh;">
-                            <div style="max-width:100%;">
-                                <p style="color:white; font-family:sans-serif;">长按图片保存 ▼</p>
-                                <img src="${canvas.toDataURL('image/png')}" style="width:100%; max-width:800px; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.3);" />
-                            </div>
-                        </body></html>
-                    `);
-                } else {
-                    alert("图片生成成功，可手动截图保存。");
+                cloneContainer.appendChild(cloneArea);
+                document.body.appendChild(cloneContainer);
+                await new Promise(r => setTimeout(r, 280));
+                const canvas = await html2canvas(cloneArea, {
+                    scale: 2.5,
+                    backgroundColor: "#ffffff",
+                    useCORS: true,
+                    logging: false,
+                    width: 800,
+                    windowWidth: 800,
+                    scrollX: 0,
+                    scrollY: 0
+                });
+                if (cloneContainer.parentNode) document.body.removeChild(cloneContainer);
+                let finalCanvas = canvas;
+                if (addWatermark) {
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    const w = canvas.width, h_orig = canvas.height, extraH = 56;
+                    finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = w; finalCanvas.height = h_orig + extraH;
+                    const ctx = finalCanvas.getContext('2d');
+                    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h_orig + extraH);
+                    ctx.drawImage(canvas, 0, 0);
+                    ctx.fillStyle = "#888888"; ctx.font = "20px 'Microsoft YaHei', sans-serif";
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillText(dateStr, w / 2, h_orig + extraH / 2);
                 }
+                const link = document.createElement('a');
+                link.download = `30天推歌挑战_${getLocalTimestamp()}.png`;
+                link.href = finalCanvas.toDataURL('image/png');
+                link.click();
+                maskEl.style.display = 'none';
+                exportBtn.disabled = false;
+                exportBtn.innerText = "保存图片";
+                isExportingLock = false;
+            } catch (err) {
+                console.error(err);
+                const cloneElem = document.querySelector('#clone-export-area')?.parentNode;
+                if (cloneElem && cloneElem.parentNode) cloneElem.parentNode.removeChild(cloneElem);
+                maskEl.style.display = 'none';
+                alert("生成失败，可刷新后重试");
+                exportBtn.disabled = false;
+                exportBtn.innerText = "保存图片";
+                isExportingLock = false;
             }
-            
-            // 完成，关闭遮罩，恢复按钮
-            maskEl.style.display = 'none';
-            exportBtn.disabled = false;
-            exportBtn.innerText = "保存图片";
-            isExportingLock = false;
-            
-        } catch (err) {
-            console.error("导出失败: ", err);
-            // 错误时务必移除克隆容器，避免残留
-            const tempClone = document.querySelector('#clone-export-area')?.parentElement;
-            if (tempClone && tempClone.parentNode) tempClone.parentNode.removeChild(tempClone);
-            maskEl.style.display = 'none';
-            alert("生成失败，可刷新页面后重试");
-            exportBtn.disabled = false;
-            exportBtn.innerText = "保存图片";
-            isExportingLock = false;
         }
-    }
-    
-    // 修复因为导出函数原来名称变更，保留原exportImg以防万一，但实际上我们使用 exportWithMask 
-    // 确保原有的任何内联调用都不受影响（但是底部按钮已经绑定 exportWithMask）
-    window.exportImg = exportWithMask;
-    
-    // 附加：对于拖拉和触屏，确保封面点击上传在移动端不失效
-    const previewA = document.getElementById('previewA');
-    const previewB = document.getElementById('previewB');
-    if (previewA) previewA.addEventListener('touchstart', (e) => { e.preventDefault(); document.getElementById('fileA').click(); });
-    if (previewB) previewB.addEventListener('touchstart', (e) => { e.preventDefault(); document.getElementById('fileB').click(); });
-    
-    // 防止某些浏览器滚动时工具栏下方的误触
-    document.querySelectorAll('.dropdown-content button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
+        window.exportImg = exportWithMask;
+
+        const previewA = document.getElementById('previewA');
+        const previewB = document.getElementById('previewB');
+        if (previewA) previewA.addEventListener('touchstart', (e) => { e.preventDefault(); document.getElementById('fileA').click(); });
+        if (previewB) previewB.addEventListener('touchstart', (e) => { e.preventDefault(); document.getElementById('fileB').click(); });
+        document.querySelectorAll('.dropdown-content button').forEach(btn => btn.addEventListener('click', (e) => e.stopPropagation()));
+
+        function storeFocus() {
+            let active = document.activeElement;
+            if (active && active.isContentEditable) active.setAttribute('data-last-focus', 'true');
+        }
+        function restoreFocus() {
+            const last = document.querySelector('[contenteditable="true"][data-last-focus="true"]');
+            if (last) { last.focus(); last.removeAttribute('data-last-focus'); }
+        }
+        document.querySelectorAll('.tool-group button, .dropdown button, .bottom-toolbar > button, .export-btn').forEach(btn => {
+            btn.addEventListener('mousedown', storeFocus);
+            btn.addEventListener('click', () => setTimeout(restoreFocus, 20));
+            btn.addEventListener('touchstart', storeFocus);
         });
-    });
-    
-    // 确保字号/颜色/插图 等操作后焦点不丢失（保留原编辑体验）
-    const allEditable = document.querySelectorAll('[contenteditable="true"]');
-    function storeFocus() {
-        let active = document.activeElement;
-        if (active && active.isContentEditable) {
-            active.setAttribute('data-last-focus', 'true');
-        }
-    }
-    function restoreFocus() {
-        const last = document.querySelector('[contenteditable="true"][data-last-focus="true"]');
-        if (last) {
-            last.focus();
-            last.removeAttribute('data-last-focus');
-        }
-    }
-    document.querySelectorAll('.tool-group button, .dropdown button, .bottom-toolbar > button').forEach(btn => {
-        btn.addEventListener('mousedown', storeFocus);
-        btn.addEventListener('click', () => setTimeout(restoreFocus, 20));
-        btn.addEventListener('touchstart', storeFocus);
-    });
-    
-    // 最终确保图片上传后焦点不丢失
-    window.loadImg = loadImg;  // 保持全局可用
-</script>
+    </script>
 </body>
 </html>
